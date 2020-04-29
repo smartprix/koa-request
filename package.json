@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/smartprix/request.git"
+    "url": "git+https://github.com/smartprix/koa-request.git"
   },
   "keywords": [
     "request",
@@ -24,11 +24,11 @@
     "smartprix"
   ],
   "author": "Hitesh Khandelwal",
-  "license": "MIT",
+  "license": "ISC",
   "bugs": {
-    "url": "https://github.com/smartprix/request/issues"
+    "url": "https://github.com/smartprix/koa-request/issues"
   },
-  "homepage": "https://github.com/smartprix/request#readme",
+  "homepage": "https://github.com/smartprix/koa-request#readme",
   "dependencies": {
     "ip": "^1.1.5",
     "koa-basic-auth": "^4.0.0",
