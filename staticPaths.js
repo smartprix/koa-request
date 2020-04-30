@@ -15,7 +15,7 @@ function getMiddleware(options) {
 	return async (ctx, next) => {
 		if (options.path === '/') {
 			// root requires special handling to check if extension denotes a static path
-			const matches = this.ctx.path.match(/^\/(.*)\.(jpg|jpeg|gif|png|ico|css|js|json|ttf|otf|eot|woff|svg|svgz|xml|html|txt|ogg|ogv|mp4|rss|atom|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$/);
+			const matches = ctx.path.match(/^\/(.*)\.(jpg|jpeg|gif|png|ico|css|js|json|ttf|otf|eot|woff|svg|svgz|xml|html|txt|ogg|ogv|mp4|rss|atom|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$/);
 			if (!matches) {
 				await next();
 				return;

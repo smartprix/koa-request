@@ -53,7 +53,7 @@ module.exports = function enableBotBanning(app, options = {}) {
 	app.use(async (ctx, next) => {
 		if (bannedUaRegex) {
 			const userAgent = ctx.headers['user-agent'] || '';
-			if (bannedUaRegex.text(userAgent)) return banned(ctx, email);
+			if (bannedUaRegex.test(userAgent)) return banned(ctx, email);
 		}
 
 		if (bannedIpRange) {

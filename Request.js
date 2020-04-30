@@ -156,7 +156,7 @@ class Request {
 			multipart: true,
 		}));
 		if (options.middleware) {
-			app.use(Request.middleware(options));
+			app.use(this.middleware(options));
 		}
 		enableBasicAuth(app, options.basicAuth);
 		enableBotBanning(app, options.banBots);
@@ -166,7 +166,7 @@ class Request {
 	/** @returns {Routes.middleware} */
 	static middleware(options) {
 		return async (ctx, next) => {
-			ctx.$req = await Request.from(ctx, options);
+			ctx.$req = await this.from(ctx, options);
 			await next();
 		};
 	}
@@ -175,7 +175,7 @@ class Request {
 	 * @param {import('koa').Context} ctx
 	 */
 	static async from(ctx, options) {
-		const req = new Request(ctx, options);
+		const req = new this(ctx, options);
 		await req.init();
 		return req;
 	}
@@ -333,8 +333,6 @@ class Request {
 			this.ctx.set('Content-Security-Policy', `frame-ancestors https://*.${domain}`);
 		}
 
-		this.resetCookies();
-		await this.handleUser();
 		this.handlePlatformModification();
 		this.setUTMCookie();
 		this.setAffidCookie();
@@ -1406,9 +1404,9 @@ class Request {
 				Object.assign(this.headers, key);
 			},
 		};
-		if (req) context.$req = await Request.from(context);
+		if (req) context.$req = await this.from(context);
 		return context;
 	}
 }
 
-export default Request;
+module.exports = Request;
