@@ -69,3 +69,7 @@ dist
 
 # geoip files
 GeoLite2-City.mmdb
+
+# local history (vs code extension - xyz.local-history)
+.history/*
+.lh

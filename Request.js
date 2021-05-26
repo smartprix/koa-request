@@ -333,14 +333,16 @@ class Request {
 			this.ctx.set('Content-Security-Policy', `frame-ancestors https://*.${domain}`);
 		}
 
-		this.handlePlatformModification();
-		this.setUTMCookie();
-		this.setAffidCookie();
-		this.handleFlashMessage();
+		if (!this.isAjax()) {
+			this.handlePlatformModification();
+			this.setUTMCookie();
+			this.setAffidCookie();
+			this.handleFlashMessage();
 
-		// in case of visit out from app we need to set cookies from params
-		if (this.ctx.query.installId) {
-			await this.setCookiesFromParams();
+			// in case of visit out from app we need to set cookies from params
+			if (this.ctx.query.installId) {
+				await this.setCookiesFromParams();
+			}
 		}
 	}
 
@@ -803,7 +805,6 @@ class Request {
 	}
 
 	// cookie id that's existing (not set in this request)
-	// TODO: testing & take params into account
 	existingCookieId() {
 		return this.ctx.cookies.get(COOKIEID_COOKIE);
 	}
@@ -822,7 +823,6 @@ class Request {
 	}
 
 	// session id that's existing (not set in this request)
-	// TODO: testing & take params into account
 	existingSessionId() {
 		return this.ctx.cookies.get(SESSIONID_COOKIE);
 	}
@@ -968,10 +968,16 @@ class Request {
 	}
 
 	isAjax() {
-		if (this.ctx.headers['x-requested-with']) {
-			return this.ctx.headers['x-requested-with'].toLowerCase() === 'xmlhttprequest';
+		if (this._isAjax === undefined) {
+			const h = this.ctx.headers['x-requested-with'];
+			if (h) {
+				this._isAjax = ['xmlhttprequest', 'fetch'].includes(h.toLowerCase());
+			}
+			else {
+				this._isAjax = false;
+			}
 		}
-		return false;
+		return this._isAjax;
 	}
 
 	isJSEnabled() {
@@ -1142,15 +1148,36 @@ class Request {
 	}
 
 	setUTMCookie() {
-		const ctx = this.ctx;
+		this.setUTMCookieFromQuery(this.ctx.query);
+	}
 
-		let source = ctx.query.utm_source || '';
-		let medium = ctx.query.utm_medium || '';
-		let campaign = ctx.query.utm_campaign || '';
-		let term = ctx.query.utm_term || '';
-		const content = ctx.query.utm_content || '';
+	/**
+	 * sets UTM cookies from a predefined url
+	 */
+	setUTMCookieFromUrl(url) {
+		const uri = (url instanceof URL) ? url : new URL(url, 'http://localhost');
+		const params = uri.searchParams;
+		this.setUTMCookieFromQuery({
+			utm_source: params.get('utm_source'),
+			utm_medium: params.get('utm_medium'),
+			utm_campaign: params.get('utm_campaign'),
+			utm_term: params.get('utm_term'),
+			utm_content: params.get('utm_content'),
+			gclid: params.get('gclid'),
+		});
+	}
 
-		if (ctx.query.gclid) {
+	/**
+	 * sets UTM cookies from a predefined query object
+	 */
+	setUTMCookieFromQuery(query) {
+		let source = query.utm_source || '';
+		let medium = query.utm_medium || '';
+		let campaign = query.utm_campaign || '';
+		let term = query.utm_term || '';
+		const content = query.utm_content || '';
+
+		if (query.gclid) {
 			source = source || 'google';
 			medium = medium || 'cpc';
 			campaign = campaign || 'google_cpc';
@@ -1168,14 +1195,7 @@ class Request {
 
 		// if the medium is direct then only set cookie if it doesn't already exist
 		const shouldSetCookie = Boolean(utmExists || medium !== 'direct' || !this.cookie(UTM_COOKIE));
-		if (!shouldSetCookie) {
-			// fix existing utm cookies (not urlencoded)
-			// TODO: remove later
-			const existing = this.ctx.cookies.get(UTM_COOKIE) || '';
-			if (!existing.includes('|')) {
-				return;
-			}
-		}
+		if (!shouldSetCookie) return;
 
 		this.cookie(
 			UTM_COOKIE,
@@ -1188,8 +1208,24 @@ class Request {
 
 	setAffidCookie() {
 		const affid = this.ctx.query[AFFID_PARAM];
-		const subaffid = this.ctx.query[SUBAFFID_PARAM];
 		if (!affid) return;
+		const subaffid = this.ctx.query[SUBAFFID_PARAM];
+
+		this.cookie(
+			AFFID_COOKIE,
+			joinCookieParts([affid, subaffid]), {
+				maxAge: AFFID_COOKIE_DURATION,
+				domain: '*',
+			},
+		);
+	}
+
+	setAffidCookieFromUrl(url) {
+		const uri = (url instanceof URL) ? url : new URL(url, 'http://localhost');
+		const params = uri.searchParams;
+		const affid = params.get(AFFID_PARAM);
+		if (!affid) return;
+		const subaffid = params.get(SUBAFFID_PARAM);
 
 		this.cookie(
 			AFFID_COOKIE,
