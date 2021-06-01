@@ -143,7 +143,7 @@ class IPRange {
 		if (!compiledSearchIps) {
 			compiledSearchIps = new IPRange(SEARCH_IPS);
 		}
-		return this.isGoogleIp() || compiledSearchIps.has(ip);
+		return this.isGoogleIp(ip) || compiledSearchIps.has(ip);
 	}
 
 	static isLocalhost(ip) {
