@@ -1128,8 +1128,8 @@ class Request {
 				refererSource = host;
 			}
 
-			const query = refererUri.query(true);
-			const term = query.q || query.searchfor || query.pq || 'not_available';
+			const query = refererUri.searchParams;
+			const term = query.get('q') || query.get('searchfor') || query.get('pq') || 'not_available';
 
 			return {
 				name: host,
