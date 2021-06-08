@@ -350,6 +350,9 @@ class Request {
 		if (this._isHttp === undefined) {
 			const ctx = this.ctx;
 			this._isHttp = (ctx.headers.origin || '').startsWith('http:') || (ctx.headers.host || '').includes(':');
+			if (!this._isHttp && this.ctx.protocol !== 'https') {
+				this.ctx.cookies.secure = true;
+			}
 		}
 		return this._isHttp;
 	}
