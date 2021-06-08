@@ -418,7 +418,7 @@ class Request {
 		}
 
 		const isHttp = this.isHttp();
-		if (options.httpOnly && !isHttp) {
+		if (!('secure' in options) && !isHttp) {
 			options.secure = true;
 		}
 
