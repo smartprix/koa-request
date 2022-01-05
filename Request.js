@@ -488,8 +488,12 @@ class Request {
 		const browserName = (ua && ua.browser && ua.browser.name) || '';
 
 		if (deviceType === 'mobile') {
-			if (browserName === 'Chrome') return 'Chrome Mobile';
-			if (browserName === 'Firefox') return 'Firefox Mobile';
+			switch (browserName) {
+				case 'Chrome': return 'Chrome Mobile';
+				case 'Firefox': return 'Firefox Mobile';
+				case 'Safari': return 'Safari Mobile';
+				case 'Mobile Safari': return 'Safari Mobile';
+			}
 		}
 
 		return browserName;
