@@ -240,6 +240,12 @@ class Request {
 		return paramValue;
 	}
 
+	/**
+	 * Get parameter as an integer (from query or body)
+	 * @param {string} key
+	 * @param {number} defaultValue
+	 * @returns {number}
+	 */
 	paramInt(key, defaultValue = 0) {
 		const value = this.param(key, null);
 		if (value === null) return defaultValue;
@@ -252,6 +258,15 @@ class Request {
 		return intVal;
 	}
 
+	/**
+	 * Get parameter as a boolean
+	 * Only '0', 'false', 'no', 'off' are considered falsy
+	 * empty string is truthy, so url?param would be truthy
+	 * but url?param=0 or url?param=false would be falsy
+	 * @param {string} key
+	 * @param {boolean} defaultValue
+	 * @returns {boolean}
+	 */
 	paramBool(key, defaultValue = false) {
 		const value = this.param(key, null);
 		if (value === null) return defaultValue;
@@ -267,6 +282,13 @@ class Request {
 		return true;
 	}
 
+	/**
+	 * Get the parameter as an id.
+	 * id  any is a max 20 character long alphanumeric string
+	 * @param {string} key
+	 * @param {string} defaultValue
+	 * @returns {string}
+	 */
 	paramId(key, defaultValue = '') {
 		const value = this.param(key, null);
 		if (value === null) return defaultValue;
@@ -295,10 +317,20 @@ class Request {
 		});
 	}
 
+	/**
+	 * Get the file with this param name
+	 * @param {string} key
+	 * @returns
+	 */
 	file(key) {
 		return this.files(key)[0] || null;
 	}
 
+	/**
+	 * Get all the files with this param name
+	 * @param {string} key
+	 * @returns {array}
+	 */
 	files(key) {
 		if (this.ctx.request.files && this.ctx.request.files[key]) {
 			const result = this.ctx.request.files[key];
@@ -309,6 +341,11 @@ class Request {
 		return [];
 	}
 
+	/**
+	 * Get the bearer token of the request.
+	 * Authorization: Bearer abc would give abc as bearer token
+	 * @returns {string}
+	 */
 	bearerToken() {
 		const authorization = this.ctx.headers.authorization;
 		if (!authorization) return '';
@@ -320,12 +357,19 @@ class Request {
 		return parts[1];
 	}
 
+	/**
+	 * Get the api token of the request.
+	 * API token can be sent as a header x-api-token
+	 * @returns {string}
+	 */
 	apiToken() {
 		return this.header('x-api-token');
 	}
 
-	// initialize a request
-	// set important cookies and all
+	/**
+	 * initialize a request
+	 * set important cookies and all
+	 */
 	async init() {
 		// don't allow other domains to embed our iframe
 		if (isProduction) {
@@ -346,6 +390,11 @@ class Request {
 		}
 	}
 
+	/**
+	 * check whether the request is http or https
+	 * isHttp returns false if the request is https, true otherwise
+	 * @returns {boolean}
+	 */
 	isHttp() {
 		if (this._isHttp === undefined) {
 			const ctx = this.ctx;
@@ -366,6 +415,7 @@ class Request {
 	 */
 
 	/**
+	 * Get or set a cookie
 	 * @template {string | number | boolean | undefined} V
 	 * @param {string} name
 	 * @param {V} value
@@ -463,18 +513,35 @@ class Request {
 		return key ? this._trackingHeader[key] : this._trackingHeader;
 	}
 
+	/**
+	 * Get the user agent of the request.
+	 * @returns {string}
+	 */
 	userAgent() {
 		return this.trackingHeader('user-agent') || this.header('user-agent');
 	}
 
+	/**
+	 * Get the referer of the request.
+	 * @returns {string}
+	 */
 	referer() {
 		return this.trackingHeader('referer') || this.header('referer');
 	}
 
+	/**
+	 * Get the referer name of the request.
+	 * @returns {string}
+	 */
 	refererName() {
 		return this._refererName;
 	}
 
+	/**
+	 * Parse the user agent with ua-parser-js and return the result
+	 * Returns {ua: '', browser: {}, cpu: {}, device: {}, engine: {}, os: {} }
+	 * @returns {object}
+	 */
 	parseUserAgent() {
 		if (!this._ua) {
 			this._ua = uaParser.setUA(this.userAgent()).getResult() || {};
@@ -482,6 +549,10 @@ class Request {
 		return this._ua;
 	}
 
+	/**
+	 * Get the browser name
+	 * @returns {string}
+	 */
 	browser() {
 		const ua = this.parseUserAgent();
 		const deviceType = (ua && ua.device && ua.device.type) || '';
@@ -499,6 +570,10 @@ class Request {
 		return browserName;
 	}
 
+	/**
+	 * Get the browser name + version (eg. Chrome 96.1.0.110)
+	 * @returns {string}
+	 */
 	browserVersion() {
 		const ua = this.parseUserAgent();
 		let browerVersion = (ua.browser && ua.browser.version) || '';
@@ -506,17 +581,29 @@ class Request {
 		return this.browser() + browerVersion;
 	}
 
+	/**
+	 * Get the browser version only (eg. 96.1.0.110)
+	 * @returns {string}
+	 */
 	browserVersionRaw() {
 		const ua = this.parseUserAgent();
 		const version = (ua.browser && ua.browser.version) || '';
 		return String(version);
 	}
 
+	/**
+	 * Get the os name (eg. Windows)
+	 * @returns {string}
+	 */
 	os() {
 		const ua = this.parseUserAgent();
 		return (ua.os && ua.os.name) || '';
 	}
 
+	/**
+	 * Get the os name + version (eg. Windows 11)
+	 * @returns {string}
+	 */
 	osVersion() {
 		const ua = this.parseUserAgent();
 		let osVersion = (ua.os && ua.os.version) || '';
@@ -524,6 +611,10 @@ class Request {
 		return this.os() + osVersion;
 	}
 
+	/**
+	 * Get the header sm-user-agent
+	 * @returns {string}
+	 */
 	smUserAgent() {
 		return this.header('sm-user-agent');
 	}
@@ -854,6 +945,7 @@ class Request {
 	}
 
 	/**
+	 * Get the ip of the request
 	 * @returns {string}
 	 */
 	ip() {
@@ -875,6 +967,7 @@ class Request {
 	}
 
 	/**
+	 * Get the real ip of the request (after considering x-forwarded-for)
 	 * @returns {string}
 	 */
 	realIP() {
@@ -907,14 +1000,16 @@ class Request {
 	}
 
 	/**
-	 * Is being proxied through local proxy
+	 * Is the request being proxied through local proxy
+	 * @returns {boolean}
 	 */
 	isProxied() {
 		return this.header('x-real-ip') && this.ctx.ip.endsWith('127.0.0.1');
 	}
 
 	/**
-	 * Is request being proxied through an external proxy (like chrome data-saver)
+	 * Is the request being proxied through an external proxy (like chrome data-saver)
+	 * @returns {boolean}
 	 */
 	isVia() {
 		return this.header('via') && this.realIP() === this.ip();
