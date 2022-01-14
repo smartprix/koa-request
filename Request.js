@@ -241,6 +241,18 @@ class Request {
 	}
 
 	/**
+	 * Get parameter as a string (from query or body)
+	 * @param {string} key
+	 * @param {number} defaultValue
+	 * @returns {number}
+	 */
+	paramStr(key, defaultValue = '') {
+		const value = this.param(key, null);
+		if (value === null) return defaultValue;
+		return String(value);
+	}
+
+	/**
 	 * Get parameter as an integer (from query or body)
 	 * @param {string} key
 	 * @param {number} defaultValue
@@ -272,6 +284,7 @@ class Request {
 		if (value === null) return defaultValue;
 
 		if (
+			value === false ||
 			value === 0 ||
 			value === '0' ||
 			value === 'false' ||
@@ -564,6 +577,7 @@ class Request {
 				case 'Firefox': return 'Firefox Mobile';
 				case 'Safari': return 'Safari Mobile';
 				case 'Mobile Safari': return 'Safari Mobile';
+				default: return browserName;
 			}
 		}
 
