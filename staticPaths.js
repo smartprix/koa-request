@@ -13,6 +13,11 @@ function getMiddleware(options) {
 	}
 
 	return async (ctx, next) => {
+		if (options.disabled) {
+			await next();
+			return;
+		}
+
 		if (options.path === '/') {
 			// root requires special handling to check if extension denotes a static path
 			const matches = ctx.path.match(/^\/(.*)\.(jpg|jpeg|gif|png|webp|avif|jxl|ico|css|js|mjs|json|ttf|otf|eot|woff|woff2|svg|svgz|xml|html|txt|ogg|ogv|mp4|av1|webm|rss|atom|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$/);
@@ -20,16 +25,16 @@ function getMiddleware(options) {
 				await next();
 				return;
 			}
-
-			// skip the current path
-			if (options.skip && options.skip(ctx)) {
-				await next();
-				return;
-			}
 		}
 
 		// return if request path is not static
 		if (!ctx.path.startsWith(options.path)) {
+			await next();
+			return;
+		}
+
+		// skip the current path
+		if (options.skip && options.skip(ctx)) {
 			await next();
 			return;
 		}
