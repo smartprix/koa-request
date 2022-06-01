@@ -767,6 +767,10 @@ class Request {
 		return this.isMobileApp() || this.isMobileWeb();
 	}
 
+	isAPI() {
+		return false;
+	}
+
 	platform() {
 		if (!this._platform) {
 			if (this.isMobileApp()) {
