@@ -30,12 +30,12 @@
   },
   "homepage": "https://github.com/smartprix/koa-request#readme",
   "dependencies": {
-    "ip": "^1.1.5",
+    "ip": "^1.1.8",
     "koa-basic-auth": "^4.0.0",
-    "koa-body": "^4.2.0",
+    "koa-body": "^5.0.0",
     "koa-send": "^5.0.1",
-    "koa2-ratelimit": "^0.9.1",
-    "maxmind": "^4.3.3",
+    "koa2-ratelimit": "^1.1.1",
+    "maxmind": "^4.3.6",
     "tar": "^6.1.11",
     "ua-parser-js": "^1.0.2"
   },
