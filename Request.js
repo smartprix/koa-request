@@ -37,6 +37,7 @@ const COOKIEID_COOKIE = 'id';
 const COOKIE_PARAM_PREFIX = '_ck_';
 const USER_TOKEN_COOKIE = 'utok';
 const FLASH_COOKIE = 'flash';
+const VIEWPORT_WIDTH_COOKIE = 'vw';
 // these cookies are httpOnly, should not be readable from js
 const SENSITIVE_COOKIES = [USER_TOKEN_COOKIE, COOKIEID_COOKIE, SESSIONID_COOKIE];
 
@@ -756,9 +757,21 @@ class Request {
 			return false;
 		}
 
-		if (!this._isMobileWeb) {
-			const ua = this.parseUserAgent();
-			this._isMobileWeb = (ua && ua.device && ua.device.type === 'mobile') || false;
+		if (this._isMobileWeb == null) {
+			const secHeader = this.ctx.headers['sec-ch-ua-mobile'];
+			if (secHeader) {
+				this._isMobileWeb = secHeader === '?1';
+			}
+			else {
+				const vwCookie = this.cookie(VIEWPORT_WIDTH_COOKIE);
+				if (vwCookie) {
+					this._isMobileWeb = Number(vwCookie) <= 750;
+				}
+				else {
+					const ua = this.parseUserAgent();
+					this._isMobileWeb = (ua && ua.device && ua.device.type === 'mobile') || false;
+				}
+			}
 		}
 		return this._isMobileWeb;
 	}
