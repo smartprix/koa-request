@@ -20,8 +20,8 @@ function getMiddleware(options) {
 
 		if (options.path === '/') {
 			// root requires special handling to check if extension denotes a static path
-			const matches = ctx.path.match(/^\/(.*)\.(jpg|jpeg|gif|png|webp|avif|jxl|ico|css|js|mjs|json|ttf|otf|eot|woff|woff2|svg|svgz|xml|html|txt|ogg|ogv|mp4|av1|webm|rss|atom|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$/);
-			if (!matches) {
+			const isStatic = /^\/(.*)\.(jpg|jpeg|gif|png|webp|avif|jxl|ico|css|js|mjs|json|ttf|otf|eot|woff|woff2|svg|svgz|xml|html|txt|ogg|ogv|mp4|av1|webm|rss|atom|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)$/.test(ctx.path);
+			if (!isStatic) {
 				await next();
 				return;
 			}
@@ -48,7 +48,7 @@ function getMiddleware(options) {
 
 		if (options.immutable) {
 			// return a 304 not modified response, as immutables can't be modified
-			if (ctx.headers['if-modified-since']) {
+			if (ctx.headers['if-modified-since'] && !ctx.response.get('Cache-Control')) {
 				ctx.status = 304;
 				return;
 			}

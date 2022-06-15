@@ -1,6 +1,6 @@
 const {RateLimit} = require('koa2-ratelimit');
 
-module.exports = function enableRateLimit(app, options = {}) {
+module.exports = function enableRateLimit(app, options) {
 	if (!options || options.enabled === false) return;
 
 	const skip = options.skip;

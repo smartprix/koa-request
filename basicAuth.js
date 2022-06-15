@@ -1,6 +1,6 @@
 const auth = require('koa-basic-auth');
 
-module.exports = function enableBasicAuth(app, options = {}) {
+module.exports = function enableBasicAuth(app, options) {
 	if (!options || options.enabled === false) return;
 
 	app.use(async (ctx, next) => {

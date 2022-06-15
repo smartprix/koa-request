@@ -26,7 +26,7 @@ function banned(ctx, email) {
 	ctx.body = `<pre>Our system has detected unusual traffic from your ip ${ip}. Hence your ip has been banned temporarily.\n${emailStr}</pre>`;
 }
 
-module.exports = function enableBotBanning(app, options = {}) {
+module.exports = function enableBotBanning(app, options) {
 	if (!options || options.enabled === false) return;
 
 	let userAgents = [];
