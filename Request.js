@@ -10,6 +10,8 @@ const enableBasicAuth = require('./basicAuth');
 const enableStaticPaths = require('./staticPaths');
 const enableBotBanning = require('./botBanning');
 
+const {setLogger, logError} = require('./logger');
+
 const uaParser = new UAParser();
 
 const ONE_HOUR = 3600 * 1000;
@@ -123,19 +125,25 @@ function getIntegerKey(key) {
 }
 
 function addQuery(url, query = {}) {
-	const uri = new URL(url, 'http://localhost');
-	if (typeof query === 'string') {
-		query = new URLSearchParams(query);
-		for (const [key, val] of query) {
-			uri.searchParams.set(key, val);
+	try {
+		const uri = new URL(url, 'http://localhost');
+		if (typeof query === 'string') {
+			query = new URLSearchParams(query);
+			for (const [key, val] of query) {
+				uri.searchParams.set(key, val);
+			}
 		}
-	}
-	else {
-		for (const [key, val] of Object.entries(query)) {
-			uri.searchParams.set(key, val);
+		else {
+			for (const [key, val] of Object.entries(query)) {
+				uri.searchParams.set(key, val);
+			}
 		}
+		return `${uri.pathname}${uri.search}`;
 	}
-	return `${uri.pathname}${uri.search}`;
+	catch (e) {
+		logError(e);
+		return url;
+	}
 }
 
 const isProduction = (process.env.NODE_ENV === 'production');
@@ -1235,7 +1243,20 @@ class Request {
 			};
 		}
 
-		const refererUri = new URL(referer);
+		let refererUri;
+		try {
+			refererUri = new URL(referer, 'http://localhost');
+		}
+		catch (e) {
+			logError(e);
+			return {
+				name: '',
+				source: 'direct',
+				medium: 'direct',
+				term: '',
+			};
+		}
+
 		let host = refererUri.hostname;
 		const baseDomain = this.baseDomain();
 
@@ -1288,16 +1309,22 @@ class Request {
 	 * sets UTM cookies from a predefined url
 	 */
 	setUTMCookieFromUrl(url) {
-		const uri = (url instanceof URL) ? url : new URL(url, 'http://localhost');
-		const params = uri.searchParams;
-		this.setUTMCookieFromQuery({
-			utm_source: params.get('utm_source'),
-			utm_medium: params.get('utm_medium'),
-			utm_campaign: params.get('utm_campaign'),
-			utm_term: params.get('utm_term'),
-			utm_content: params.get('utm_content'),
-			gclid: params.get('gclid'),
-		});
+		try {
+			const uri = (url instanceof URL) ? url : new URL(url, 'http://localhost');
+			const params = uri.searchParams;
+			this.setUTMCookieFromQuery({
+				utm_source: params.get('utm_source'),
+				utm_medium: params.get('utm_medium'),
+				utm_campaign: params.get('utm_campaign'),
+				utm_term: params.get('utm_term'),
+				utm_content: params.get('utm_content'),
+				gclid: params.get('gclid'),
+			});
+		}
+		catch (e) {
+			logError(e);
+			// ignore error
+		}
 	}
 
 	/**
@@ -1354,19 +1381,25 @@ class Request {
 	}
 
 	setAffidCookieFromUrl(url) {
-		const uri = (url instanceof URL) ? url : new URL(url, 'http://localhost');
-		const params = uri.searchParams;
-		const affid = params.get(AFFID_PARAM);
-		if (!affid) return;
-		const subaffid = params.get(SUBAFFID_PARAM);
+		try {
+			const uri = (url instanceof URL) ? url : new URL(url, 'http://localhost');
+			const params = uri.searchParams;
+			const affid = params.get(AFFID_PARAM);
+			if (!affid) return;
+			const subaffid = params.get(SUBAFFID_PARAM);
 
-		this.cookie(
-			AFFID_COOKIE,
-			joinCookieParts([affid, subaffid]), {
-				maxAge: AFFID_COOKIE_DURATION,
-				domain: '*',
-			},
-		);
+			this.cookie(
+				AFFID_COOKIE,
+				joinCookieParts([affid, subaffid]), {
+					maxAge: AFFID_COOKIE_DURATION,
+					domain: '*',
+				},
+			);
+		}
+		catch (e) {
+			logError(e);
+			// ignore error
+		}
 	}
 
 	handlePlatformModification() {
@@ -1496,7 +1529,7 @@ class Request {
 		}
 		catch (e) {
 			this._flash = '';
-			console.error('Error parsing flash message', e);
+			logError('Error parsing flash message', e);
 		}
 
 		this.cookie(FLASH_COOKIE, null);
@@ -1578,4 +1611,5 @@ class Request {
 	}
 }
 
+Request.setLogger = setLogger;
 module.exports = Request;
