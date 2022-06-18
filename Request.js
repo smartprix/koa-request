@@ -1403,16 +1403,23 @@ class Request {
 	}
 
 	handlePlatformModification() {
-		// don't change platform in mobile apps
-		if (this.isMobileApp()) return;
-
-		const platform = this.ctx.query[PLATFORM_PARAM] || this.cookie(PLATFORM_COOKIE);
-		const setPlatformCookie = this.setPlatform(platform);
-		if (setPlatformCookie) {
-			this.cookie(PLATFORM_COOKIE, platform, {
-				maxAge: PLATFORM_COOKIE_DURATION,
-				domain: '*',
-			});
+		let setPlatformCookie = false;
+		if (!this.isMobileApp()) {
+			// don't change platform in mobile apps from query or cookie
+			const platform = this.ctx.query[PLATFORM_PARAM] || this.cookie(PLATFORM_COOKIE);
+			setPlatformCookie = this.setPlatform(platform);
+			if (setPlatformCookie) {
+				this.cookie(PLATFORM_COOKIE, platform, {
+					maxAge: PLATFORM_COOKIE_DURATION,
+					domain: '*',
+				});
+			}
+		}
+		if (!setPlatformCookie) {
+			const smPlatform = this.header('x-sm-platform');
+			if (smPlatform) {
+				this._platform = smPlatform;
+			}
 		}
 	}
 
