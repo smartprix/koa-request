@@ -399,8 +399,8 @@ class Request {
 			this.ctx.set('Content-Security-Policy', `frame-ancestors https://*.${domain}`);
 		}
 
+		this.handlePlatformModification();
 		if (!this.isAjax()) {
-			this.handlePlatformModification();
 			this.setUTMCookie();
 			this.setAffidCookie();
 			this.handleFlashMessage();
@@ -1404,8 +1404,8 @@ class Request {
 
 	handlePlatformModification() {
 		let setPlatformCookie = false;
-		if (!this.isMobileApp()) {
-			// don't change platform in mobile apps from query or cookie
+		if (!this.isMobileApp() && !this.isAjax()) {
+			// don't change platform in mobile apps (and ajax requests) from query or cookie
 			const platform = this.ctx.query[PLATFORM_PARAM] || this.cookie(PLATFORM_COOKIE);
 			setPlatformCookie = this.setPlatform(platform);
 			if (setPlatformCookie) {
