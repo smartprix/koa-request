@@ -1,6 +1,6 @@
 {
   "name": "@smpx/koa-request",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Handle basic tasks for koajs",
   "main": "index.js",
   "types": "index.d.ts",
