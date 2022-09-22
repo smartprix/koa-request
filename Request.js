@@ -1260,7 +1260,7 @@ class Request {
 		let host = refererUri.hostname;
 		const baseDomain = this.baseDomain();
 
-		if (host.endsWith(baseDomain)) {
+		if (host.endsWith(baseDomain) || /^(?:direct|localhost|127|192|172|10)\b/.test(host)) {
 			return {
 				name: host,
 				source: host,
