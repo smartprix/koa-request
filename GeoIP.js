@@ -9,6 +9,7 @@ const fileName = 'GeoLite2-City';
 const fileUrl = `https://raw.githubusercontent.com/GitSquared/node-geolite2-redist/master/redist/${fileName}.tar.gz`;
 const fileDir = __dirname;
 const filePath = `${fileDir}/${fileName}.mmdb`;
+let geoInitPromise;
 let geoip;
 
 function save(url, outDir) {
@@ -84,13 +85,21 @@ async function updateDb() {
 	setTimeout(updateDb, 3 * 24 * 3600 * 1000);
 }
 
+async function geoIpInit() {
+	await download();
+	geoip = await maxmind.open(filePath);
+	if (process.env.NODE_ENV === 'production') {
+		updateDb();
+	}
+}
+
 async function getGeoIp() {
 	if (!geoip) {
-		await download();
-		geoip = await maxmind.open(filePath);
-		if (process.env.NODE_ENV === 'production') {
-			updateDb();
+		if (!geoInitPromise) {
+			geoInitPromise = geoIpInit();
 		}
+		await geoInitPromise;
+		geoInitPromise = null;
 	}
 	return geoip;
 }

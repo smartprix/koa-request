@@ -1423,9 +1423,16 @@ class Request {
 		}
 	}
 
+	geoipLoc() {
+		if (this._giploc === undefined) {
+			this._giploc = GeoIP.getSync(this.ip()) || {};
+		}
+		return this._giploc;
+	}
+
 	ipLocation() {
 		if (this._ipLoc === undefined) {
-			const loc = GeoIP.getSync(this.ip()) || {};
+			const loc = this.geoipLoc();
 			const country = loc.country;
 			const city = loc.city;
 			const state = loc.subdivisions && loc.subdivisions[0];
