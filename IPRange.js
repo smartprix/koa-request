@@ -11,6 +11,7 @@ const PRIVATE_IPS = [
 ];
 
 // Source: https://www.lifewire.com/what-is-the-ip-address-of-google-818153
+// https://developers.google.com/search/apis/ipranges/googlebot.json
 const GOOGLE_IPS = [
 	'64.233.160.0 - 64.233.191.255',
 	'66.102.0.0 - 66.102.15.255',
@@ -27,11 +28,16 @@ const GOOGLE_IPS = [
 ];
 
 const SEARCH_IPS = [
-	'178.154.128.0/17', // YANDAX
-	'87.250.224.0/19',	// YANDAX
-	'157.55.0.0/16',	// Microsoft
-	'207.46.0.0/19',	// Microsoft
-	'17.0.0.0/8',		// Apple
+	// BingBot (https://www.bing.com/toolbox/bingbot.json)
+	'157.55.0.0/16',
+	'207.46.0.0/19',
+	'52.167.144.0/24',
+	'40.77.128.0/17',
+	// YANDAX
+	'178.154.128.0/17',
+	'87.250.224.0/19',
+	// Apple
+	'17.0.0.0/8',
 ];
 
 let compiledPrivateIps;
