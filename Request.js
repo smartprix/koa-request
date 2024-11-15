@@ -834,6 +834,13 @@ class Request {
 		return false;
 	}
 
+	platform() {
+		if (this.isApp()) return 'mobile_app';
+		if (this.isMobile()) return 'mobile_web';
+		if (this.isAPI()) return 'api';
+		return 'desktop';
+	}
+
 	/**
 	 * @typedef {Object} UTMObject
 	 * @property {string} source
