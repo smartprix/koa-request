@@ -22,7 +22,6 @@ const TEN_YEARS = 10 * ONE_YEAR;
 
 const PLATFORM_PARAM = 'platform';
 const PLATFORM_COOKIE = 'platform';
-const PLATFORM_COOKIE_DURATION = 4 * ONE_HOUR;
 const APPINFO_PARAM = 'sm_app';
 const APPINFO_COOKIE = 'sm_app';
 const APPINFO_HEADER = 'sm-app';
@@ -399,7 +398,6 @@ class Request {
 			this.ctx.set('Content-Security-Policy', `frame-ancestors https://*.${domain}`);
 		}
 
-		this.handlePlatformModification();
 		if (!this.isAjax()) {
 			this.setUTMCookie();
 			this.setAffidCookie();
@@ -653,17 +651,17 @@ class Request {
 	_getAppInfoFromString(infoStr, separator = '#') {
 		if (!infoStr) return null;
 		// eslint-disable-next-line prefer-const
-		let [platform, appVersion, installId] = infoStr.split(separator);
-		platform = platform.toLowerCase();
+		let [os, appVersion, installId] = infoStr.split(separator);
+		os = os.toLowerCase();
 
 		const appInfo = {
-			platform,
+			os,
 			appVersion,
 			installId,
 		};
 
-		if (this.appPlatforms().has(platform)) {
-			appInfo.isMobileApp = true;
+		if (this.appPlatforms().has(os)) {
+			appInfo.appType = 'app';
 		}
 
 		return appInfo;
@@ -693,17 +691,75 @@ class Request {
 		return this._getAppInfoFromString(this.ctx.headers[APPINFO_HEADER]);
 	}
 
-	getAppInfo() {
-		const appInfoHeader = this.getAppInfoFromHeader();
-		if (appInfoHeader) return appInfoHeader;
+	getAppInfoCustom() {
+		return null;
+	}
 
-		const appInfoParam = this.getAppInfoFromParam();
-		if (appInfoParam) return appInfoParam;
+	_getDeviceTypeFromUA() {
+		const ua = this.parseUserAgent();
+		const deviceType = ua.device?.type;
+		if (deviceType === 'mobile') return 'mobile';
+		if (deviceType === 'tablet') return 'tablet';
+		return 'desktop';
+	}
 
-		const appInfoUserAgent = this.getAppInfoFromUserAgent();
-		if (appInfoUserAgent) return appInfoUserAgent;
+	_getDeviceType() {
+		const secHeader = this.ctx.headers['sec-ch-ua-mobile'];
+		if (secHeader) {
+			if (secHeader === '?1') return 'mobile';
+			return this._getDeviceTypeFromUA();
+		}
+		const vwCookie = this.cookie(VIEWPORT_WIDTH_COOKIE);
+		if (vwCookie) {
+			if (Number(vwCookie) <= 750) return 'mobile';
+			return this._getDeviceTypeFromUA();
+		}
+		return this._getDeviceTypeFromUA();
+	}
 
-		return {};
+	computeAppInfo() {
+		const ctx = this.ctx;
+
+		const appInfo1 = this.getAppInfoFromHeader() || {};
+		const appInfo2 = this.getAppInfoFromParam() || {};
+		const appInfo3 = this.getAppInfoFromUserAgent() || {};
+		const appInfo4 = this.getAppInfoCustom() || {};
+
+		const appInfo = {
+			installId: ctx.query.installId,
+			appVersion: ctx.query.appVersion,
+			...appInfo4,
+			...appInfo3,
+			...appInfo2,
+			...appInfo1,
+		};
+
+		let xPlatform = (
+			ctx.query[PLATFORM_PARAM] ||
+			this.cookie(PLATFORM_COOKIE) ||
+			ctx.headers['x-sm-platform']
+		);
+		if (xPlatform) {
+			xPlatform = xPlatform.toLowerCase();
+			if (xPlatform === 'mobile_app') {
+				if (!appInfo.deviceType) appInfo.deviceType = 'mobile';
+				if (!appInfo.appType) appInfo.appType = 'app';
+			}
+			else {
+				const os = xPlatform.match(/android|ios|wp|tizen|jio/i)?.[0];
+				if (os) {
+					if (!appInfo.deviceType) appInfo.deviceType = 'mobile';
+					if (!appInfo.appType) appInfo.appType = 'app';
+					if (!appInfo.os) appInfo.os = os.toLowerCase();
+				}
+				else if (!appInfo.deviceType) {
+					appInfo.deviceType = xPlatform.includes('mobile') ? 'mobile' : 'desktop';
+				}
+			}
+		}
+		else if (!appInfo.deviceType) {
+			appInfo.deviceType = this._getDeviceType();
+		}
 	}
 
 	/*
@@ -711,156 +767,71 @@ class Request {
 	 * this means that you can have the url as sm_app=android
 	 * and it'll automatically identify it as an android app
 	 */
-	appInfo(param = null) {
+	appInfo() {
 		if (!this._appInfo) {
-			this._appInfo = this.getAppInfo() || {};
+			this._appInfo = this.computeAppInfo() || {};
 		}
-		return param ? this._appInfo[param] : this._appInfo;
+		return this._appInfo;
 	}
 
 	installId() {
-		return this.appInfo('installId') || this.ctx.query.installId || '';
+		return this.appInfo().installId || '';
 	}
 
 	appVersion() {
-		return this.appInfo('appVersion') || this.ctx.query.appVersion || '';
+		return this.appInfo().appVersion || '';
+	}
+
+	isApp() {
+		return this.appInfo().type === 'app';
 	}
 
 	isAndroidApp() {
-		return this.appInfo('platform') === 'android';
+		return this.isApp() && this.appInfo().os === 'android';
 	}
 
 	isIOSApp() {
-		return this.appInfo('platform') === 'ios';
+		return this.isApp() && this.appInfo().os === 'ios';
 	}
 
 	isWPApp() {
-		return this.appInfo('platform') === 'wp';
+		return this.isApp() && this.appInfo().os === 'wp';
 	}
 
 	isTizenApp() {
-		return this.appInfo('platform') === 'tizen';
+		return this.isApp() && this.appInfo().os === 'tizen';
 	}
 
 	isJIOApp() {
-		return this.appInfo('platform') === 'jio';
+		return this.isApp() && this.appInfo().os === 'jio';
 	}
 
 	isMobileApp() {
-		// for setPlatform cases
-		const platform = this._platform;
-		if (platform) {
-			if (platform === 'mobile_app') return true;
-			return false;
-		}
-
-		return !!this.appInfo('isMobileApp');
+		return this.isApp() && this.isMobile();
 	}
 
 	isMobileWeb() {
-		// for setPlatform cases
-		const platform = this._platform;
-		if (platform) {
-			if (platform === 'mobile_web') return true;
-			return false;
-		}
+		return this.isMobile() && !this.isApp();
+	}
 
-		if (this._isMobileWeb == null) {
-			const secHeader = this.ctx.headers['sec-ch-ua-mobile'];
-			if (secHeader) {
-				this._isMobileWeb = secHeader === '?1';
-			}
-			else {
-				const vwCookie = this.cookie(VIEWPORT_WIDTH_COOKIE);
-				if (vwCookie) {
-					this._isMobileWeb = Number(vwCookie) <= 750;
-				}
-				else {
-					const ua = this.parseUserAgent();
-					this._isMobileWeb = (ua && ua.device && ua.device.type === 'mobile') || false;
-				}
-			}
-		}
-		return this._isMobileWeb;
+	deviceType() {
+		return this.appInfo().deviceType || 'desktop';
 	}
 
 	isMobile() {
-		return this.isMobileApp() || this.isMobileWeb();
+		return this.appInfo().deviceType === 'mobile';
+	}
+
+	isTablet() {
+		return this.appInfo().deviceType === 'tablet';
+	}
+
+	isDesktop() {
+		return !this.isMobile();
 	}
 
 	isAPI() {
 		return false;
-	}
-
-	platform() {
-		if (!this._platform) {
-			if (this.isMobileApp()) {
-				this._platform = 'mobile_app';
-			}
-			else if (this.isMobileWeb()) {
-				this._platform = 'mobile_web';
-			}
-			else if (this.isAPI()) {
-				this._platform = 'api';
-			}
-			else {
-				this._platform = 'desktop';
-			}
-		}
-
-		return this._platform;
-	}
-
-	setPlatform(platform) {
-		if (!platform) return false;
-		platform = handleArray(platform);
-		const appPlatform = platform.replace('_app', '');
-
-		if (this.appPlatforms().has(appPlatform)) {
-			this._platform = 'mobile_app';
-			this._subPlatform = `${appPlatform}_app`;
-			return false;
-		}
-
-		switch (platform) {
-			case 'mobile':
-			case 'mobile_web':
-				this._platform = 'mobile_web';
-				return true;
-			case 'www':
-			case 'desktop':
-				this._platform = 'desktop';
-				return true;
-			case 'mobile_app':
-				this._platform = 'mobile_app';
-				return true;
-			default:
-				return false;
-		}
-	}
-
-	subPlatform() {
-		if (!this._subPlatform) {
-			const appPlatform = this.appInfo('platform');
-			if (appPlatform && this.isMobileApp()) {
-				this._subPlatform = `${appPlatform}_app`;
-			}
-			else {
-				this._subPlatform = this.platform();
-			}
-		}
-		return this._subPlatform;
-	}
-
-	isDesktop() {
-		// for setPlatform cases
-		const platform = this._platform;
-		if (platform) {
-			if (platform === 'desktop') return true;
-			return false;
-		}
-
-		return this.platform() === 'desktop';
 	}
 
 	/**
@@ -1152,14 +1123,6 @@ class Request {
 		return '/signup?next=' + encodeURIComponent(this.nextUrl());
 	}
 
-	mobileUrl() {
-		return addQuery(this.ctx.url, {[PLATFORM_PARAM]: 'mobile'});
-	}
-
-	desktopUrl() {
-		return addQuery(this.ctx.url, {[PLATFORM_PARAM]: 'desktop'});
-	}
-
 	redirect(url, qs = true) {
 		if (qs === true) {
 			url = addQuery(url, this.ctx.querystring);
@@ -1399,27 +1362,6 @@ class Request {
 		catch (e) {
 			logError(e);
 			// ignore error
-		}
-	}
-
-	handlePlatformModification() {
-		let setPlatformCookie = false;
-		if (!this.isMobileApp() && !this.isAjax()) {
-			// don't change platform in mobile apps (and ajax requests) from query or cookie
-			const platform = this.ctx.query[PLATFORM_PARAM] || this.cookie(PLATFORM_COOKIE);
-			setPlatformCookie = this.setPlatform(platform);
-			if (setPlatformCookie) {
-				this.cookie(PLATFORM_COOKIE, platform, {
-					maxAge: PLATFORM_COOKIE_DURATION,
-					domain: '*',
-				});
-			}
-		}
-		if (!setPlatformCookie) {
-			const smPlatform = this.header('x-sm-platform');
-			if (smPlatform) {
-				this._platform = smPlatform;
-			}
 		}
 	}
 
