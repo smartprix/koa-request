@@ -654,11 +654,16 @@ class Request {
 		let [os, appVersion, installId] = infoStr.split(separator);
 		os = os.toLowerCase();
 
-		const appInfo = {
-			os,
-			appVersion,
-			installId,
-		};
+		const appInfo = {};
+		if (os) {
+			appInfo.os = os;
+		}
+		if (appVersion) {
+			appInfo.appVersion = appVersion;
+		}
+		if (installId) {
+			appInfo.installId = installId;
+		}
 
 		if (this.appPlatforms().has(os)) {
 			appInfo.appType = 'app';
@@ -760,6 +765,8 @@ class Request {
 		else if (!appInfo.deviceType) {
 			appInfo.deviceType = this._getDeviceType();
 		}
+
+		return appInfo;
 	}
 
 	/*
