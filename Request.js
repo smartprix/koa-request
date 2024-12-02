@@ -790,7 +790,7 @@ class Request {
 	}
 
 	isApp() {
-		return this.appInfo().type === 'app';
+		return this.appInfo().appType === 'app';
 	}
 
 	isAndroidApp() {
