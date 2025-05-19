@@ -1078,7 +1078,10 @@ class Request {
 	}
 
 	isSearchIP() {
-		return IPRange.isSearchIp(this.ip());
+		if (this._issip === undefined) {
+			this._issip = IPRange.isSearchIp(this.ip());
+		}
+		return this._issip;
 	}
 
 	isGet() {
